@@ -37,7 +37,13 @@ function login()
             $_SESSION['adminKey'] = ADMIN_KEY;
             $_SESSION['msg'] = 'Вы авторизованы';
         }
-        header('Location: ' . $_SERVER['HTTP_REFERER']);
+        // на профиль пользователя
+       $pos1 = stripos($_SERVER['HTTP_REFERER'], 'page=auth');
+       if ($pos1 === false) {
+           header('Location: ?page=profile&id=' . $row['id']);
+       } else {
+           header('Location: ' . $_SERVER['HTTP_REFERER']);
+       }
     }
     exit;
 }
