@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+</head>
+<body>
+<ul>
+    <li><a href="/">Главная страница</a></li>
+    <li><a href="?page=auth">Авторизация</a></li>
+    <li><a href="?page=user">Пользователи</a></li>
+    <li><a href="?page=orders">Заказы</a></li>
+    <li><a href="?page=reviews">Отзывы</a></li>
+    <li><a href="?page=goods">Каталог товаров</a></li>
+    <li>
+        <a href="?page=cart">
+            Корзина
+            (<i id="cart">{CART}</i>)
+        </a>
+    </li>
+</ul>
+    <p style="color: red">{__MSG__}</p>
+
+    <div class="">{CONTENT}</div>
+
+</body>
+</html>
