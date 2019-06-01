@@ -30,5 +30,6 @@ $file = file_get_contents($dir .'main.html');
 
 $file = str_replace('{CONTENT}', $content, $file);
 $file = str_replace('{__MSG__}', $msg, $file);
+$file = str_replace('{CART}', getCountInCart(), $file);
 
 echo $file;

@@ -1,109 +1,150 @@
 <?php
 function index()
-{
-   $sql = "SELECT id, name, description, image, price FROM goods";
-   $res = mysqli_query(connect(), $sql);
-
-   $content = '<h1>Каталог товаров</h1>';
-   while ($row = mysqli_fetch_assoc($res)) {
-       $content .= <<<php
-       <form method="post" action="?page=goods&func=add">
-           <h3>{$row['name']}</h3>
-           <p>Price: {$row['price']}</p>
-           <input type="hidden" name="id" value="{$row['id']}">
-           <input type="submit" value="Bay">
-       </form>
-       <hr>
+{    
+    $sql = "SELECT id, name, description, price, hide FROM goods WHERE hide = false";
+    $res = mysqli_query(connect(), $sql);
+    $content = '<h1>Товары</h1>';
+    
+    if (isAdmin()) {
+        $content .= <<<php
+            <a href="?page=goods&func=add">Добавить новый товар</a><br><br>
 php;
-
+    }
+	
+    while ($row = mysqli_fetch_assoc($res)) {
+        $content .=<<<php
+		<a href="?page=goods&func=view&id={$row['id']}">{$row['name']}</a>
+        <p>{$row['price']} р.</p>
+        <hr>
+php;
    }
-   $content .= renderCart();
    return $content;
 }
 
-function add() {
-   closeNotAdmin();
+function view()
+{    
+    $id = (int) $_GET['id'];
+    $sql = "SELECT id, name, description, price, hide FROM goods WHERE id = $id";
+    $res = mysqli_query(connect(), $sql);
+    $content = '
+       <script src="/js/main.js"></script>
+       <a href="?page=goods">Все товары</a>
+    ';
+    $row = mysqli_fetch_assoc($res);
+    $content .= <<<php
+        <h1>{$row['name']}</h1>
+        <p>{$row['price']}р.</p>
+        <p>{$row['description']}</p>
+php;
+    
+    if (isAuth()) {
+        $content .= <<<php
+            <p style="color: red; cursor: pointer">
+                <i onclick="add({$id})">Добавить в корзину</i>
+            </p>
+php;
+    }
 
-   if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-       if (isset($_POST['id'])) $id = (int)$_POST['id'];
-       // поиск в каталоге товаров
-       $sql = "SELECT id, name, description, image, price
-               FROM goods 
-               WHERE id = '$id'";
-       $res = mysqli_query(connect(), $sql);
-       $row = mysqli_fetch_assoc($res);
-       
-       if (! isset($_SESSION['cart'])) {
-           $_SESSION['cart'] = array();
-       }
-       // поиск товара в корзине
-       goodInCart = false;
-       foreach( $_SESSION['cart'] as $cart_item ) {
-           if ($cart_it['id'] == $id) {
-               $cart_it['quantity']++;
-               goodInCart = true;
-           }
-       }
-       // добавить товар если такого нет
-       if (! goodInCart) {
-           $row['quantity'] = 1;
-           $_SESSION['cart'][] = $row;
-       }
-   }
-   exit;
-
-   $content .= renderCart();
-   return $content;
+    if (isAdmin()) {
+        $content .= <<<php
+            <a href="?id={$id}&page=goods&func=archive">Archive</a>
+            <a href="?id={$id}&page=goods&func=update">Update..</a>
+            <hr>
+php;
+    }
+    return $content;
 }
 
-function update() {
-   closeNotAdmin();
+function add()
+{    
+	closeNotAdmin();
+	
+	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+        $name = clearStr($_POST['name']);
+        $description = clearStr($_POST['description']);
+        $price = clearStr($_POST['price']);
+        $sql = "INSERT INTO goods (name, description, price)
+          VALUES ('{$name}', '{$description}', '{$price}')";
+        mysqli_query(connect(), $sql);
+        $msg = 'Товар успешно добавлен';
+        $_SESSION['msg'] = $msg;
+        header('Location: ?page=goods');
+        exit;
+	}
 
-   if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-       if (isset($_POST['id'])) $id = (int)$_POST['id'];
-       if (isset($_POST['quantity'])) $quantity = (int)$_POST['quantity'];
-       // поиск товара в корзине
-       foreach( $_SESSION['cart'] as $key => $cart_item ) {
-           if ($cart_it['id'] == $id) {
-               if ($quantity > 0) {
-                   $cart_it['quantity'] = $quantity;
-               } else {
-                   unset($cart_item[$key]);
-               }
-           }
-       }
-   }
-   exit;
+	
+	$content = <<<php
+	<h1>Добавление товара</h1>
+	<form method="post" action="?page=goods&func=add">
+		<input type="text" name="name" placeholder="name"><br>
+		<input type="text" name="price" placeholder="price"><br>
+		<textarea 
+           name="description" 
+           placeholder="Введите описание товара" 
+           id="" 
+           cols="30" 
+           rows="5"></textarea><br>
+		<input type="submit" value="Добавить товар">
+	</form>
+php;
 
-   $content .= renderCart();
-   return $content;
+	return $content;
 }
 
-function renderCart() {
-   closeNotAdmin();
-   if (! empty($_SESSION['cart'])) {
-       
-       $content = '<h1>Корзина</h1>';
-       foreach( $_SESSION['cart'] as $cart_item ) {
-           $content .=<<<php
-           <form method="post" action="?page=goods&func=update">
-               <h3>{$cart_item['name']}</h3>
-               <p>Price: {$cart_item['price']}</p>
-               <p>Quantity: 
-                   <input type="number" name="quantity" min="0" max="1000" value="{$cart_item['quantity']}">
-               </p>
-               <input type="hidden" name="id" value="{$cart_item['id']}">
-               <input type="submit" value="Update">
-           </form>
-php;
-       }
+function update()
+{    
+	closeNotAdmin();
+    $id = (int) $_GET['id'];
+    
+	if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+		$name = clearStr($_POST['name']);
+		$description = clearStr($_POST['description']);
+		$price = clearStr($_POST['price']);
+		$sql = "UPDATE goods 
+			SET name='{$name}', description='{$description}', price='{$price}'
+			WHERE id = {$id}";
+		mysqli_query(connect(), $sql);
+		header('Location: ?page=goods&func=view&id=' . $id);
+		exit;
+	}
 
-   } else {
-       $content =<<<php
-       <h1>Корзина</h1>
-       <h4>Корзина пуста</h4>
+	$sql = "SELECT id, name, description, price, hide FROM goods WHERE id = " . $id;
+
+	$res = mysqli_query(connect(), $sql);
+	$row = mysqli_fetch_assoc($res);
+
+	$content = <<<php
+	<h1>Редактирование информации</h1>
+	<form method="post" action="?page=goods&func=update&id={$id}">
+		Наименование: <input type="text" name="name" value="{$row['name']}"><br>
+		Цена: <input type="text" name="price" value="{$row['price']}"><br>
+		Описание: <textarea 
+            name="description" 
+            placeholder="Введите описание товара" 
+            id="" 
+            cols="30" 
+            rows="5">{$row['description']}</textarea><br>
+		<input type="submit">
+	</form>
 php;
-   }
-   
-   return $content;
+
+	return $content;
+}
+
+function archive()
+{    
+	closeNotAdmin();
+    $id = (int) $_GET['id'];
+	$msg = 'Что-то пошло не так...';
+
+	if (! empty($id)) {
+		$sql = "UPDATE goods SET hide = true WHERE id = {$id}";
+		$res = mysqli_query(connect(), $sql);
+		$msg = 'Товар отправлен в архив';
+
+	}
+
+    $_SESSION['msg'] = $msg;
+	header('Location: ?page=goods');
+    exit;
 }

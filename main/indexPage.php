@@ -1,5 +1,5 @@
 <?php
 function index()
 {
-    return '<h1>Главная страница</h1> ';
+    return '<h1>Главная страница</h1>';
 }

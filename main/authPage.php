@@ -2,7 +2,7 @@
 function index()
 {
     $content = '<h1>Форма авторизации</h1>';
-    if (!isset($_SESSION['adminKey']) || $_SESSION['adminKey'] != ADMIN_KEY) {
+    if (!isset($_SESSION['userId'])) {
         $content .=<<<php
 
         <form method="post" action="?page=auth&func=login">
@@ -14,7 +14,7 @@ function index()
 php;
     } else {
         $content .=<<<php
-<a href="?page=auth&func=logout">Exit</a>
+            <a href="?page=auth&func=logout">Exit</a>
 php;
     }
 
@@ -25,7 +25,7 @@ function login()
 {
     if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $login = clearStr($_POST['login']);
-        $sql = "SELECT id, fio, password 
+        $sql = "SELECT id, fio, password, is_admin
                 FROM users 
                 WHERE login = '$login'";
         $res = mysqli_query(connect(), $sql);
@@ -34,16 +34,15 @@ function login()
         $password = md5($_POST['password'].SOL);
         $_SESSION['msg'] = 'Не верный логин или пароль';
         if (! empty($login) && $password == $row['password']) {
-            $_SESSION['adminKey'] = ADMIN_KEY;
+            $_SESSION['userId'] = $row['id'];
+            $_SESSION['adminKey'] = '';
             $_SESSION['msg'] = 'Вы авторизованы';
+            if ($row['is_admin']) {
+                $_SESSION['adminKey'] = ADMIN_KEY;
+                $_SESSION['msg'] .= ' как администратор';
+            }
         }
-        // на профиль пользователя
-       $pos1 = stripos($_SERVER['HTTP_REFERER'], 'page=auth');
-       if ($pos1 === false) {
-           header('Location: ?page=profile&id=' . $row['id']);
-       } else {
-           header('Location: ' . $_SERVER['HTTP_REFERER']);
-       }
+        header('Location: ?page=user');
     }
     exit;
 }
